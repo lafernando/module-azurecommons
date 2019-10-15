@@ -5,4 +5,4 @@ Common functionality for Azure connectors.
 ## Compatibility
 | Ballerina Language Version 
 | -------------------------- 
-| 0.990.3    
+| 1.0.0

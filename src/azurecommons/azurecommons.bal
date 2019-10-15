@@ -1,7 +1,7 @@
 import ballerina/crypto;
-import ballerina/encoding;
 import ballerina/http;
 import ballerina/time;
+import ballerina/lang.'array as arrays;
 
 public const STORAGE_API_VERSION = "2018-03-28";
 
@@ -21,9 +21,9 @@ public function generateStorageCommonHeaders() returns map<string> {
 public function generateCanonicalizedHeadersString(map<string> headers) returns string {
     // TODO: sort headers - when sort functionality is availble
     string result = "";
-    foreach var (key, value) in headers {
+    foreach var [key, value] in headers.entries() {
         if (key.indexOf("x-ms-") == 0) {
-            result = result + key.toLower().trim() + ":" + value.trim() + "\n";
+            result = result + key.toLowerAscii().trim() + ":" + value.trim() + "\n";
         }
     }
     return result;
@@ -35,8 +35,17 @@ public function generateCanonicalizedHeadersString(map<string> headers) returns 
 public function generateStorageDateString() returns string {
     string DATE_TIME_FORMAT = "EEE, dd MMM yyyy HH:mm:ss z";
     time:Time time = time:currentTime();
-    time:Time standardTime = time:toTimeZone(time, "GMT");
-    return time:format(standardTime, DATE_TIME_FORMAT);
+    var standardTime = time:toTimeZone(time, "GMT");
+    if (standardTime is time:Time) {
+        var result = time:format(standardTime, DATE_TIME_FORMAT);
+        if (result is string) {
+            return result;
+        } else {
+            panic result;
+        }
+    } else {
+        panic standardTime;
+    }
 }
 
 # Generates a storage error with the given HTTP response.
@@ -50,8 +59,8 @@ public function generateStorageError(http:Response resp) returns error {
     if (authError != "") {
         message = message + " AuthError: " + authError;
     }
-    error err = error(errorXml.Code.getTextValue(), { message: message });
-    return untaint err;
+    error err = error(errorXml.Code.getTextValue(), detail = message);
+    return <@untainted> err;
 }
 
 # Populates the headers with the generated shared key lite signature.
@@ -74,7 +83,7 @@ public function populateSharedKeyLiteStorageAuthorizationHeader(string account, 
 # + req - The HTTP request
 # + headers - The header map to populate the HTTP request
 public function populateRequestHeaders(http:Request req, map<string> headers) {
-    foreach var (k, v) in headers {
+    foreach var [k, v] in headers.entries() {
         req.setHeader(k, v);
     }
 }
@@ -104,13 +113,15 @@ public function generateSharedKeyLiteStorageServiceSignature(string accessKey, s
     if (value is string) {
         date = value;
     }
-    string stringToSign = verb.toUpper() + "\n" +
+    string stringToSign = verb.toUpperAscii() + "\n" +
                           contentMD5 + "\n" + 
                           contentType + "\n" +
                           date + "\n" + 
                           canonicalizedHeaders +   
                           canonicalizedResource;
     
-    byte[] key = check encoding:decodeBase64(accessKey);
-    return encoding:encodeBase64(crypto:hmacSha256(stringToSign.toByteArray("UTF-8"), key));
+    
+    
+    byte[] key = check arrays:fromBase64(accessKey);
+    return arrays:toBase64(crypto:hmacSha256(stringToSign.toBytes(), key));
 }

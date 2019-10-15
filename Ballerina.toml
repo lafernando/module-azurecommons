@@ -1,7 +1,7 @@
 [project]
 org-name = "wso2"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["WSO2"]
 keywords = ["microsoft", "azure", "commons"]
 repository = "https://github.com/wso2-ballerina/module-azurecommons"
-license = "Apache-2.0"
+license = ["Apache-2.0"]

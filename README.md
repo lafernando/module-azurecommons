@@ -5,5 +5,5 @@ This module has common functionality for Azure connectors
 ## Compatibility
 | Ballerina Language Version 
 | -------------------------- 
-| 0.990.3                    
+| 0.991.x                    
 
